@@ -5,3 +5,5 @@ sentencepiece
 accelerate
 python-docx
 sumy
+PdfReader
+PyPDF2
