@@ -119,7 +119,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-st.title("🤖 AIML Resume Analyzer (Fast API Version)")
+st.title("🤖 AIML Resume Analyzer")
 
 uploaded_files = st.file_uploader("📂 Upload Resumes", accept_multiple_files=True, type=["txt", "docx","pdf"])
 
