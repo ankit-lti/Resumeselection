@@ -8,12 +8,17 @@ from sumy.nlp.tokenizers import Tokenizer
 from sumy.summarizers.lsa import LsaSummarizer
 import re
 from PyPDF2 import PdfReader
+import nltk
 
 # Set your Hugging Face API token
 api_token = "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"
 API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3"
 #API_URL = "https://api-inference.huggingface.co/models/meta-llama/Llama-2-7b-chat-hf"
 headers = {"Authorization": f"Bearer {api_token}"}
+
+# Download NLTK data
+nltk.download('punkt_tab')
+nltk.data.path.append('/home/vscode/nltk_data')
 
 def extract_text_from_docx(docx_file):
     """Extracts text from a .docx file."""
@@ -55,7 +60,7 @@ def analyze_resume(resume_text):
     You are a brilliant AI assisstant whose work will be to analyse the resume provided and provide the summary of the candidate resume and key skills he has worked with. ALso add only below details as asked 
     Extract the following details from the resume:
     - Candidate Name: Extract the name (assumed to be at the top).
-    - Key Skills: List all key skills, and highlight AIML-related skills in **bold**.
+    - Key Skills: List all key skills, and highlight AIML-related skills in **bold**. AIML are those skills which are entirely related to AIML technologies like Python, Tensorflow etc.
     - AIML Experience Level:
       - >10 years → **Expert**
       - 5-10 years → **Intermediate**
@@ -119,7 +124,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-st.title("🤖 AIML Resume Analyzer")
+st.title("🤖 AIML Resume Analyzer (Fast API Version)")
 
 uploaded_files = st.file_uploader("📂 Upload Resumes", accept_multiple_files=True, type=["txt", "docx","pdf"])
 
