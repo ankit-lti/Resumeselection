@@ -57,65 +57,82 @@ def analyze_resume(resume_text):
 
     prompt = f"""
   Only add the generated response in your output. Don't include the prompt and the resume of the candidate in your output.
-    You are a brilliant AI assisstant whose work will be to analyse the resume provided and provide the summary of the candidate resume and key skills he has worked with. ALso add only below details as asked 
-    Extract the following details from the resume:
+  \n You are a brilliant AI assisstant whose work will be to analyse the resume provided and provide the summary of the candidate resume and key skills he has worked with. ALso add only below details as asked 
+  \n Provide Brief summary about the Candidate and past work experience and where he has worked till now.
+  \n Based on resume analyzer need to identify the Industry Domain he has worked with . if its part of media & Industry domain then list out the subdomain  (like media supply chain (Content acquisition , Media processing, Quality Control ,delivery etc  ) , streaming )
+  \n Extract the following details from the resume:
     - Candidate Name: Extract the name (assumed to be at the top).
     - Key Skills: List all key skills, and highlight AIML-related skills in **bold**. AIML are those skills which are entirely related to AIML technologies like Python, Tensorflow etc.
     - AIML Experience Level:
       - >10 years → **Expert**
       - 5-10 years → **Intermediate**
       - <5 years → **Novice**
-    
-    Output Format (ONLY output this format, NO extra text):
+    \n Always start and end the below response by adding three backticks like ``` to identify the actual reponse before the first field.
     Candidate Name: [Extracted Name]
     Key Skills: [List of Skills, AIML in bold]
     AIML Experience: [Novice/Intermediate/Expert]
-
+    Summary: [Brief summary about the candidate and past experience]
+    Domain:[List out the domain and subdomain]
     Resume:
     {resume_text}
 """
 
     
-    response = requests.post(API_URL, headers=headers, json={"inputs": prompt},timeout=30)
+    response = requests.post(API_URL, headers=headers, json={"inputs": prompt, "parameters": {"temperature": 0.9}}, timeout=30)
     print(response.status_code, response.text)  # Debug API response
     response_json = response.json()
     if isinstance(response_json, list) and "generated_text" in response_json[0]:
         output_text = response_json[0]["generated_text"]
             
             # Ensure we extract only the second occurrence of "Candidate Name:"
-        parts = output_text.split("Candidate Name:")
+        #parts = output_text.split("Candidate Name:")
             
+        parts = output_text.split("```")
         if len(parts) > 1:
-            output_text = "Candidate Name:" + parts[-1]  # Keep only the second occurrence onwards
-            print(output_text)
-            return output_text.strip()
+            output_text = "```".join(parts[1:]).strip()  # Join parts after the first occurrence of ```
+            return output_text
     
     return f"Error: Unexpected response - {response.json()}"# Streamlit App
 
 def parse_analysis_result(result):
     """Parses the analysis result into a dictionary."""
     data = {}
-    # Use regex to extract each field
-    name_match = re.search(r"Candidate Name:\s*(.*)", result)
-    skills_match = re.search(r"Key Skills:\s*(.*)", result)
-    experience_match = re.search(r"AIML Experience:\s*(.*)", result)
-
-    if name_match:
-        data["Candidate Name"] = name_match.group(1).strip()
+    name_matches = re.findall(r"Candidate Name:\s*(.*)", result, re.IGNORECASE)
+    skills_match = re.findall(r"Key Skills:\s*(.*)", result, re.IGNORECASE)
+    experience_match = re.findall(r"AIML Experience:\s*(.*)", result, re.IGNORECASE)
+    summary_match = re.findall(r"Summary:\s*(.*)", result, re.IGNORECASE)
+    domain_match = re.findall(r"Domain:\s*(.*)", result, re.IGNORECASE)
+    print("Result:", result)  # Print the entire result for debugging
+    print("Name Matches:", name_matches)  # Print all name matches
+    print("Skills Match:", skills_match)  # Print the skills match result
+    print("Experience Match:", experience_match)  # Print the experience match result
+    print("Summary Match:", summary_match)  # Print the summary match result
+    print("Domain Match:", domain_match)  # Print the domain match result
+    if name_matches:
+        data["Candidate Name"] = name_matches[-1].strip()  # Take the last occurrence
+    if summary_match:
+        data["Summary"] = summary_match[-1].strip()
     if skills_match:
-        data["Key Skills"] = skills_match.group(1).strip()
+        data["Key Skills"] = skills_match[-1].strip()
     if experience_match:
-        data["AIML Experience"] = experience_match.group(1).strip()
+        data["AIML Experience"] = experience_match[-1].strip()
+    if domain_match:
+        data["Domain"] = domain_match[-1].strip()
+
 
     return data
+
+st.set_page_config(layout="wide")  # Set the layout to wide
 st.markdown(
     """
     <style>
-    /* Align table headers to the left */
+    th, td {
+        word-wrap: break-word;
+        white-space: normal;
+    }
     th {
         text-align: left !important;
     }
-    /* Align table cells to the left */
     td {
         text-align: left !important;
     }
@@ -124,7 +141,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-st.title("🤖 AIML Resume Analyzer (Fast API Version)")
+st.title("🤖 AIML Resume Analyzer")
 
 uploaded_files = st.file_uploader("📂 Upload Resumes", accept_multiple_files=True, type=["txt", "docx","pdf"])
 
@@ -149,7 +166,7 @@ if uploaded_files:
 
         # Analyze the resume
         result = analyze_resume(resume_text)
-        print(result)
+        #print(result)
         # Add data for display
         #data.append({
         #    "Resume File": uploaded_file.name,
@@ -164,7 +181,8 @@ if uploaded_files:
     #st.write("### 🔍 Analysis Results")
     #st.write(result)
      # Parse the structured output
-        if result.startswith("Candidate Name:"):
+        #print("Before parsing",result)
+        if "candidate name" in result.lower():
             parsed_data = parse_analysis_result(result)
             data.append(parsed_data)
         else:
@@ -174,6 +192,13 @@ if uploaded_files:
     if data:
         df = pd.DataFrame(data)
         st.write("### 🔍 Analysis Results")
-        st.table(df)  # Display as a table
+        st.markdown(df.to_html(escape=False), unsafe_allow_html=True)
+        #st.dataframe(df,use_container_width=True)
+        #st.dataframe(df, column_config={
+        #    "Candidate Name": {"width": 150},
+        #    "Key Skills": {"width": 300},
+        #    "AIML Experience": {"width": 150},
+        #    "Summary": {"width": 600},
+        #})
     else:
         st.write("No valid data to display.")
