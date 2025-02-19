@@ -58,19 +58,16 @@ def analyze_resume(resume_text):
     prompt = f"""
   Only add the generated response in your output. Don't include the prompt and the resume of the candidate in your output.
   \n You are a brilliant AI assisstant whose work will be to analyse the resume provided and provide the summary of the candidate resume and key skills he has worked with. ALso add only below details as asked 
-  \n Provide Brief summary about the Candidate and past work experience and where he has worked till now.
-  \n Based on resume analyzer need to identify the Industry Domain he has worked with . if its part of media & Industry domain then list out the subdomain  (like media supply chain (Content acquisition , Media processing, Quality Control ,delivery etc  ) , streaming )
-  \n Extract the following details from the resume:
-    - Candidate Name: Extract the name (assumed to be at the top).
-    - Key Skills: List all key skills, and highlight AIML-related skills in **bold**. AIML are those skills which are entirely related to AIML technologies like Python, Tensorflow etc.
-    - AIML Experience Level:
-      - >10 years → **Expert**
-      - 5-10 years → **Intermediate**
-      - <5 years → **Novice**
-    \n Always start and end the below response by adding three backticks like ``` to identify the actual reponse before the first field.
-    Candidate Name: [Extracted Name]
-    Key Skills: [List of Skills, AIML in bold]
-    AIML Experience: [Novice/Intermediate/Expert]
+  \n Provide Brief summary about the Candidate and past work experience and where he has worked till now and be specific about the Media & Entertainment Industry.
+  \n Calcualte the total number of Experience of the candidate based on the work history provided in the resume.
+  \n Calculate any Media and Entertainment experience as relevant experience where the candidate has worked in any of the relevant companies within the Media & Entertainment Industry. Some examples of such companies include Paramount, HBO, Disney, and others."
+  \n ist all the companies where the candidate has worked till now, in comma-separated values.
+  \n Based on the resume analyzer, identify the Industry Domain the candidate has worked with. If it is part of the Media & Entertainment domain, then list out the subdomains (such as media supply chain (Content acquisition, Media processing, Quality Control, delivery, etc.), streaming, broadcasting, film production, post-production, animation, gaming, and digital media)
+  \n Always start and end the below response by adding three backticks like ``` to identify the actual reponse before the first field.
+    Candidate Name: [Candidate Name]
+    Total Experience: [total number of years experience]
+    Relevant M&E Experience: [relevant years of experience based on Media and Entertainment industry]
+    Companies: [List all companies in comma separated]
     Summary: [Brief summary about the candidate and past experience]
     Domain:[List out the domain and subdomain]
     Resume:
@@ -98,24 +95,32 @@ def parse_analysis_result(result):
     """Parses the analysis result into a dictionary."""
     data = {}
     name_matches = re.findall(r"Candidate Name:\s*(.*)", result, re.IGNORECASE)
-    skills_match = re.findall(r"Key Skills:\s*(.*)", result, re.IGNORECASE)
-    experience_match = re.findall(r"AIML Experience:\s*(.*)", result, re.IGNORECASE)
+    #skills_match = re.findall(r"Key Skills:\s*(.*)", result, re.IGNORECASE)
+    totalExperience_match = re.findall(r"Total Experience:\s*(.*)", result, re.IGNORECASE)
+    relevantExperience_match = re.findall(r"Relevant M&E Experience:\s*(.*)", result, re.IGNORECASE)
+    companies_match = re.findall(r"Companies:\s*(.*)", result, re.IGNORECASE)
     summary_match = re.findall(r"Summary:\s*(.*)", result, re.IGNORECASE)
     domain_match = re.findall(r"Domain:\s*(.*)", result, re.IGNORECASE)
     print("Result:", result)  # Print the entire result for debugging
     print("Name Matches:", name_matches)  # Print all name matches
-    print("Skills Match:", skills_match)  # Print the skills match result
-    print("Experience Match:", experience_match)  # Print the experience match result
+    #print("Skills Match:", skills_match)  # Print the skills match result
+    print("Total Experience:", totalExperience_match)  # Print the experience match result
+    print("Relevant M&E Experience:", relevantExperience_match)  # Print the relevant experience match result
+    print("Companies:", companies_match)  # Print the relevant experience match result
     print("Summary Match:", summary_match)  # Print the summary match result
     print("Domain Match:", domain_match)  # Print the domain match result
     if name_matches:
         data["Candidate Name"] = name_matches[-1].strip()  # Take the last occurrence
     if summary_match:
         data["Summary"] = summary_match[-1].strip()
-    if skills_match:
-        data["Key Skills"] = skills_match[-1].strip()
-    if experience_match:
-        data["AIML Experience"] = experience_match[-1].strip()
+    #if skills_match:
+    #    data["Key Skills"] = skills_match[-1].strip()
+    if totalExperience_match:
+        data["Total Experience"] = totalExperience_match[-1].strip()
+    if relevantExperience_match:
+        data["Relevant M&E Experience"] = relevantExperience_match[-1].strip()
+    if companies_match:
+        data["Companies"] = companies_match[-1].strip()
     if domain_match:
         data["Domain"] = domain_match[-1].strip()
 
