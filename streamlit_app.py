@@ -56,20 +56,25 @@ def analyze_resume(resume_text):
         resume_text = summarize_resume(resume_text, sentence_count=8)
 
     prompt = f"""
-  Only add the generated response in your output. Don't include the prompt and the resume of the candidate in your output.
-  \n You are a brilliant AI assisstant whose work will be to analyse the resume provided and provide the summary of the candidate resume and key skills he has worked with. ALso add only below details as asked 
-  \n Provide Brief summary about the Candidate and past work experience and where he has worked till now and be specific about the Media & Entertainment Industry.
-  \n Calcualte the total number of Experience of the candidate based on the work history provided in the resume.
-  \n Calculate any Media and Entertainment experience as relevant experience where the candidate has worked in any of the relevant companies within the Media & Entertainment Industry. Some examples of such companies include Paramount, HBO, Disney, and others."
-  \n ist all the companies where the candidate has worked till now, in comma-separated values.
-  \n Based on the resume analyzer, identify the Industry Domain the candidate has worked with. If it is part of the Media & Entertainment domain, then list out the subdomains (such as media supply chain (Content acquisition, Media processing, Quality Control, delivery, etc.), streaming, broadcasting, film production, post-production, animation, gaming, and digital media)
-  \n Always start and end the below response by adding three backticks like ``` to identify the actual reponse before the first field.
-    Candidate Name: [Candidate Name]
+Only include the generated response in your output. Do not include the prompt or the candidate's resume in your output.
+
+You are a brilliant AI assistant whose task is to analyze the provided resume and generate a summary of the candidate's resume and key skills. Please include only the details requested below:
+
+Analyze the provided resume and extract the candidate name. Ensure that the name is accurately identified and included in your response.
+Provide a brief summary of the candidate and their past work experience, specifically highlighting any experience in the Media & Entertainment Industry. Also highlight in bold letters any specific Jobs role done in Media & Entertainment industry. 
+Calculate the total number of years of experience the candidate has based on the work history provided in the resume.
+Calculate the relevant Media & Entertainment experience, considering any work done at companies within the Media & Entertainment Industry (e.g., Paramount, HBO, Disney, etc.).
+Analyze the provided resume and identify any media-related platforms or technologies the candidate has worked with. Specifically, look for platforms similar to VidiSpine, Fabric,Charles Proxy, Apple Configurator,MPX in th resume. List these platforms in your response. Iy they are none then specified as None Specified.
+List all the companies where the candidate has worked, in comma-separated values.
+Based on the resume analyzer, identify the Industry Domain the candidate has worked in. If it is part of the Media & Entertainment domain, list out the subdomains (such as media supply chain (Content acquisition, Media processing, Quality Control, delivery, etc.), streaming, broadcasting, film production, post-production, animation, gaming, and digital media).
+Always start and end the response by adding three backticks like ``` to identify the actual response before the first field.
+    Candidate Name: [Provide Candidate Name from the resume]
     Total Experience: [total number of years experience]
     Relevant M&E Experience: [relevant years of experience based on Media and Entertainment industry]
     Companies: [List all companies in comma separated]
     Summary: [Brief summary about the candidate and past experience]
     Domain:[List out the domain and subdomain]
+    Platform: [List media Platform if any]
     Resume:
     {resume_text}
 """
@@ -101,6 +106,7 @@ def parse_analysis_result(result):
     companies_match = re.findall(r"Companies:\s*(.*)", result, re.IGNORECASE)
     summary_match = re.findall(r"Summary:\s*(.*)", result, re.IGNORECASE)
     domain_match = re.findall(r"Domain:\s*(.*)", result, re.IGNORECASE)
+    platform_match = re.findall(r"Platform:\s*(.*)", result, re.IGNORECASE)
     print("Result:", result)  # Print the entire result for debugging
     print("Name Matches:", name_matches)  # Print all name matches
     #print("Skills Match:", skills_match)  # Print the skills match result
@@ -109,6 +115,7 @@ def parse_analysis_result(result):
     print("Companies:", companies_match)  # Print the relevant experience match result
     print("Summary Match:", summary_match)  # Print the summary match result
     print("Domain Match:", domain_match)  # Print the domain match result
+    print("Platform Match:", platform_match)  # Print the domain match result
     if name_matches:
         data["Candidate Name"] = name_matches[-1].strip()  # Take the last occurrence
     if summary_match:
@@ -121,11 +128,22 @@ def parse_analysis_result(result):
         data["Relevant M&E Experience"] = relevantExperience_match[-1].strip()
     if companies_match:
         data["Companies"] = companies_match[-1].strip()
+    if platform_match:
+        data["Platform"] = platform_match[-1].strip()
     if domain_match:
         data["Domain"] = domain_match[-1].strip()
 
 
     return data
+
+# Function to convert DataFrame to Excel and return as bytes
+def to_excel(df):
+    output = BytesIO()
+    writer = pd.ExcelWriter(output, engine='openpyxl')
+    df.to_excel(writer, index=False, sheet_name='Sheet1')
+    writer.close()
+    processed_data = output.getvalue()
+    return processed_data
 
 st.set_page_config(layout="wide")  # Set the layout to wide
 st.markdown(
@@ -198,6 +216,13 @@ if uploaded_files:
         df = pd.DataFrame(data)
         st.write("### 🔍 Analysis Results")
         st.markdown(df.to_html(escape=False), unsafe_allow_html=True)
+        # Add download button for Excel file
+        st.download_button(
+        label="Download data as Excel",
+        data=to_excel(df),
+        file_name='analysis_results.xlsx',
+        mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
         #st.dataframe(df,use_container_width=True)
         #st.dataframe(df, column_config={
         #    "Candidate Name": {"width": 150},
@@ -206,4 +231,4 @@ if uploaded_files:
         #    "Summary": {"width": 600},
         #})
     else:
-        st.write("No valid data to display.")
+        st.write("No valid data to display.")   
